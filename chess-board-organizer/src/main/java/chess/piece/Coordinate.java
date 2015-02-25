@@ -28,5 +28,11 @@ public class Coordinate {
 	public int getY() {
 		return y;
 	}
+
+	@Override
+	public String toString() {
+		return String.valueOf(x)+String.valueOf(y);
+	}
+	
 	
 }

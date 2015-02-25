@@ -8,5 +8,7 @@ package chess;
  */
 public class Executor {
 
+	private int maxNumberOfRetries;
+	
 	
 }

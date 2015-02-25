@@ -39,6 +39,9 @@ public class Slot {
 	public boolean isAvailable(){
 		return piece==null;
 	}
+	public void setPiece(Piece piece) {
+		this.piece = piece;
+	}
 	
 	
 }
