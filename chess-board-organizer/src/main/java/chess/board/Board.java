@@ -175,7 +175,12 @@ public class Board {
 			log.info(strLine.toString()); 
 		}
 	}
-	
+
+	/**
+	 * Prints on the output log the values of the control maps used by the class to place pieces on the board<br/>
+	 * it also calls the method <code>print()</code>
+	 * 
+	 */
 	public void printInternalValues()
 	{
 		print();
@@ -197,6 +202,11 @@ public class Board {
 		
 	}
 	
+	/**
+	 * Utility method to print on the output log the contents of a map by extracting the keys
+	 * and the printing the value associated with that key 
+	 * @param map the map to be printed on the logs
+	 */
 	private void printMap(Map<String,Slot> map)
 	{
 		Set<String> keys=map.keySet();

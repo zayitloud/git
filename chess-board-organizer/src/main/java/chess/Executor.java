@@ -25,7 +25,10 @@ public class Executor {
 	 */
 	private List<Piece> pool;
 	
-	private Board board;
+	/**
+	 * To store the boards configuration per run
+	 */
+	private List<Board> boards;
 	
 	private String boardSize;
 	
@@ -34,51 +37,59 @@ public class Executor {
 		pool = new ArrayList<Piece>();
 		pool.add(new King());
 		pool.add(new King());
-		board = new Board(3,3);
 		boardSize="3;3";
+		maxNumberOfRetries=2;
 		
 	}
 	
 	public void start()
 	{
-		Map<String, Slot> occupiedSlots = board.getOccupiedSlots();
-		Map<String, Slot> availableSlots = board.getAvailableSlots();
+		Map<String, Slot> occupiedSlots;
+		Map<String, Slot> availableSlots;
 		//to avoid checking a slot for a specific piece more than once
 		Map<String, Slot> occupiedSlotsPerPiece;
 		List<Coordinate> captureSlots;
 		boolean captureSlotsAreFree=true;
-		for(Piece piece: pool)
+		Board board;
+		for(int retry=1; retry<=maxNumberOfRetries; retry++)
 		{
-			occupiedSlotsPerPiece=board.getOccupiedSlots(piece.getClass().getName());
-			for(String coordinate: availableSlots.keySet())
+
+			board = new Board(3,3);
+			occupiedSlots = board.getOccupiedSlots();
+			availableSlots = board.getAvailableSlots();
+			for(Piece piece: pool)
 			{
-				Coordinate proposedPosition = new Coordinate(coordinate);
-				//if the available coordinate has been occupied before by the same type of piece
-				//for example, on a previous execution then ignore that coordinate
-				if(occupiedSlotsPerPiece!=null && occupiedSlotsPerPiece.containsKey(coordinate))
+				occupiedSlotsPerPiece=board.getOccupiedSlots(piece.getClass().getName());
+				for(String coordinate: availableSlots.keySet())
 				{
-					continue;
-				}
-				//get the slots the piece can move to to verify if they are available
-				//if any of the slots is occupied by another piece then the available slot cannot be used by this piece type
-				captureSlots = piece.getCaptureSlotsPositions(proposedPosition, new Coordinate(boardSize));
-				for(Coordinate captureSlotCoordinate: captureSlots)
-				{
-					if(occupiedSlots.containsKey(captureSlotCoordinate.toString()))
+					Coordinate proposedPosition = new Coordinate(coordinate);
+					//if the available coordinate has been occupied before by the same type of piece
+					//for example, on a previous execution then ignore that coordinate
+					if(occupiedSlotsPerPiece!=null && occupiedSlotsPerPiece.containsKey(coordinate))
 					{
-						captureSlotsAreFree=false;
+						continue;
+					}
+					//get the slots the piece can move to to verify if they are available
+					//if any of the slots is occupied by another piece then the available slot cannot be used by this piece type
+					captureSlots = piece.getCaptureSlotsPositions(proposedPosition, new Coordinate(boardSize));
+					for(Coordinate captureSlotCoordinate: captureSlots)
+					{
+						if(occupiedSlots.containsKey(captureSlotCoordinate.toString()))
+						{
+							captureSlotsAreFree=false;
+							break;
+						}
+					}
+					if(captureSlotsAreFree)
+					{
+						board.addPiece(piece, proposedPosition);
 						break;
 					}
+						
 				}
-				if(captureSlotsAreFree)
-				{
-					board.addPiece(piece, proposedPosition);
-					break;
-				}
-					
 			}
+			board.printInternalValues();
 		}
-		board.printInternalValues();
 		
 	}
 	
