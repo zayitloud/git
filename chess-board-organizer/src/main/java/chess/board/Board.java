@@ -76,16 +76,18 @@ public class Board {
 	
 	/**
 	 * Initializes a chess board as a matrix of size <code>m x n</code> passed in as parameters but it also takes a
-	 * map which contains coordinates (key represented as xy) that will be unavailable to place pieces on this board
+	 * map which contains coordinates (key represented as x;y) that will be unavailable to place pieces on this board
 	 * 
 	 * @param m number of horizontal lines
 	 * @param n number of vertical lines
 	 * @param occupiedSlots coordinates and slots where pieces may not be placed
+	 * @param occupiedSlotsByPieceType 
 	 */
-	public Board(int m, int n, Map<String,Slot> occupiedSlots)
+	public Board(int m, int n,/* Map<String,Slot> occupiedSlots,*/ Map<String,Map<String,Slot>> occupiedSlotsByPieceType)
 	{
 		this(m,n);
-		occupiedSlots.putAll(occupiedSlots);
+//		this.occupiedSlotsMap.putAll(occupiedSlots);
+		this.occupiedSlotsByPieceType.putAll(occupiedSlotsByPieceType);
 	}	
 
 	/**
@@ -217,6 +219,10 @@ public class Board {
 			log.info(key + (!slot.isAvailable() ? slot.getPiece().getAbbreviatedName() : " "));
 		}
 		
+	}
+
+	public Map<String, Map<String, Slot>> getOccupiedSlotsByPieceType() {
+		return occupiedSlotsByPieceType;
 	}
 	
 	
