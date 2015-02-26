@@ -16,7 +16,7 @@ import junit.framework.TestCase;
  */
 public class TestKing extends TestCase {
 
-	Logger log= LoggerFactory.getLogger(TestKing.class);
+	private Logger log= LoggerFactory.getLogger(TestKing.class);
 	@Before
 	protected void setUp() throws Exception {
 		super.setUp();

@@ -32,4 +32,9 @@ public class King implements Piece {
 		return coordinates;
 	}
 
+	@Override
+	public String getAbbreviatedName() {
+		return "K";
+	}
+
 }

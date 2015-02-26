@@ -18,4 +18,12 @@ public interface Piece {
 	 * in case there are no capture slots
 	 */
 	List<Coordinate> getCaptureSlotsPositions(Coordinate position, Coordinate size);
+	
+	/**
+	 * Returns the abbreviated piece name for example:<br/>
+	 * <li>King --> K
+	 * <li> Knight --> N
+	 * @return the abbreviated piece name
+	 */
+	String getAbbreviatedName();
 }
