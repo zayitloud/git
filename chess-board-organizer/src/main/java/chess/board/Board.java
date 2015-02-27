@@ -1,6 +1,8 @@
 package chess.board;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -44,6 +46,12 @@ public class Board {
 	 */
 	private Map<String,Slot> slots;
 	
+	private List<String> availableCoordinatesList;
+	
+	public List<String> getAvailableCoordinatesList() {
+		return availableCoordinatesList;
+	}
+
 	private Logger log = LoggerFactory.getLogger(Board.class);
 	
 	private Coordinate size;
@@ -62,6 +70,7 @@ public class Board {
 		availableSlots= new HashMap<String, Slot>();
 		occupiedSlotsByPieceType= new HashMap<String,Map<String,Slot>>();
 		slots=new HashMap<String, Slot>();
+		availableCoordinatesList = new ArrayList<String>();
 		for(int i=1; i<=m; i++)
 		{
 			for(int j=1; j<=n;j++)
@@ -70,6 +79,7 @@ public class Board {
 				key=String.valueOf(i) + ";" + String.valueOf(j);
 				availableSlots.put(key,slot);
 				slots.put(key,slot);
+				availableCoordinatesList.add(key);
 			}
 		}
 	}
@@ -121,6 +131,7 @@ public class Board {
 		}
 		occupiedSlotsByPieceType.get(slot.getPiece().getClass().getName()).put(strCoordinate,slot);
 		availableSlots.remove(strCoordinate);
+		availableCoordinatesList.remove(strCoordinate);
 	}
 
 	/**

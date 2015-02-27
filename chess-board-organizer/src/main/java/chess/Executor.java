@@ -1,6 +1,7 @@
 package chess;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +13,7 @@ import chess.board.Slot;
 import chess.piece.Coordinate;
 import chess.piece.King;
 import chess.piece.Piece;
+import chess.piece.Rook;
 
 /**
  * This class is the executor of the main application logic which is allocating
@@ -33,7 +35,7 @@ public class Executor {
 	 */
 	private List<Board> boards;
 	
-	private String boardSize;
+	private Coordinate boardSize;
 	
 	Logger log= LoggerFactory.getLogger(Executor.class);
 	
@@ -42,7 +44,8 @@ public class Executor {
 		pool = new ArrayList<Piece>();
 		pool.add(new King());
 		pool.add(new King());
-		boardSize="3;3";
+		pool.add(new Rook());
+		boardSize=new Coordinate("3;3");
 		maxNumberOfRetries=10;
 		boards=new ArrayList<Board>();
 		
@@ -50,8 +53,9 @@ public class Executor {
 	
 	public void start()
 	{
+		int successCount=0;
 		Map<String, Slot> occupiedSlots;
-		Map<String, Slot> availableSlots;
+		List<String> availableSlots;
 		//to avoid checking a slot for a specific piece more than once
 		Map<String, Slot> occupiedSlotsPerPiece;
 		List<Coordinate> captureSlots;
@@ -60,19 +64,15 @@ public class Executor {
 		for(int retry=1; retry<=maxNumberOfRetries; retry++)
 		{
 
-//			if(previousBoard==null)
-//			{
-				board = new Board(3,3);
-//			}else{
-//				board = new Board(3,3,previousBoard.getOccupiedSlotsByPieceType());
-//			}
+			board = new Board(boardSize.getX(),boardSize.getY());
 			occupiedSlots = board.getOccupiedSlots();
-			availableSlots = board.getAvailableSlots();
+			availableSlots = board.getAvailableCoordinatesList();
 			captureSlotsAreFree=true;
 			for(Piece piece: pool)
 			{
 				occupiedSlotsPerPiece=board.getOccupiedSlots(piece.getClass().getName());
-				for(String coordinate: availableSlots.keySet())
+				Collections.shuffle(availableSlots);
+				for(String coordinate: availableSlots)
 				{
 					Coordinate proposedPosition = new Coordinate(coordinate);
 					//if the available coordinate has been occupied before by the same type of piece
@@ -87,7 +87,7 @@ public class Executor {
 					}
 					//get the slots the piece can move to to check if they are available
 					//if any of the slots is occupied by another piece then the available slot cannot be used by this piece type
-					captureSlots = piece.getCaptureSlotsPositions(proposedPosition, new Coordinate(boardSize));
+					captureSlots = piece.getCaptureSlotsPositions(proposedPosition, boardSize);
 					for(Coordinate captureSlotCoordinate: captureSlots)
 					{
 						if(occupiedSlots.containsKey(captureSlotCoordinate.toString()))
@@ -106,19 +106,28 @@ public class Executor {
 				}
 			}
 			log.info("*************Retry " + retry);
-			board.print();
-			boards.add(board);
+			if(occupiedSlots.size()==pool.size())
+			{
+				successCount++;
+				board.print();
+				boards.add(board);
+			}else{
+				log.info("No combination has been found, trying again");
+			}
 			previousBoard=board;
 		}
+		log.info("Success combinations found: " + successCount);
+		log.info("Number of calculations: " + maxNumberOfRetries);
 		
 	}
 	
 	/**
-	 * 
-	 * @param pieceType
-	 * @param currentCombination
-	 * @param newPosition
-	 * @return
+	 * Checks whether the current arrangement of positions (in coordinates) matches any of the arrangements of previous boards<br/>
+	 * To achieve this every position  on the current arrangements is looked up in the previous boards arrangements.
+	 * @param pieceType 
+	 * @param currentCombination the current pieces positions
+	 * @param newPosition the last position being added to the current positions
+	 * @return true if the arrangement matches any of the previous boards arrangements 
 	 */
 	private boolean matchPreviousCombinationOfCoordinates(String pieceType, Map<String,Slot> currentCombination, String newPosition)
 	{
@@ -132,6 +141,7 @@ public class Executor {
 		//slot positions on previous boards to avoid repeating positions
 		for(Board board:boards)
 		{
+			matchesCombination=true;
 			previousCombination = board.getOccupiedSlots(pieceType);
 			//if the combinations are not the same size we still don't know
 			if(currentCombination.size()+1==previousCombination.size())
@@ -157,6 +167,19 @@ public class Executor {
 			
 		}
 		return false;
+	}
+	
+	private boolean areCaptureSlotsFree(Piece piece, Coordinate boardSize, Coordinate proposedPosition, Map<String,Slot> occupiedSlots)
+	{
+		List<Coordinate> captureSlots = piece.getCaptureSlotsPositions(proposedPosition, boardSize);
+		for(Coordinate captureSlotCoordinate: captureSlots)
+		{
+			if(occupiedSlots.containsKey(captureSlotCoordinate.toString()))
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	public static void main(String args[])
