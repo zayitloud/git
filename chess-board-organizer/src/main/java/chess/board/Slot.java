@@ -10,7 +10,7 @@ import chess.piece.Piece;
  * <li>occupied: in this case, the slot also contains a reference to the 
  * Piece occupying it<br/>
  * The slot also contains the coordinate where it is located on the chess board
- * @author 30032751
+ * @author Willie
  *
  */
 public class Slot {

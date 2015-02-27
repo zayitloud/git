@@ -2,7 +2,7 @@
  * 
  */
 /**
- * @author 30032751
+ * @author Willie
  *
  */
 package chess.board;

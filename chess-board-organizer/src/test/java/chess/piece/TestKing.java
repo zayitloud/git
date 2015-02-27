@@ -11,7 +11,7 @@ import junit.framework.TestCase;
 
 /**
  * Some test cases for the King class
- * @author 30032751
+ * @author Willie
  *@see King
  */
 public class TestKing extends TestCase {

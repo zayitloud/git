@@ -13,6 +13,7 @@ import chess.board.Board;
 import chess.board.Slot;
 import chess.piece.Coordinate;
 import chess.piece.King;
+import chess.piece.Knight;
 import chess.piece.Piece;
 import chess.piece.Rook;
 
@@ -46,8 +47,10 @@ public class Executor {
 		pool.add(new King());
 		pool.add(new King());
 		pool.add(new Rook());
-		boardSize=new Coordinate("3;3");
-		maxNumberOfRetries=1000;
+		pool.add(new Knight());
+		pool.add(new Knight());
+		boardSize=new Coordinate("4;4");
+		maxNumberOfRetries=10000;
 		boards=new ArrayList<Board>();
 		
 	}
