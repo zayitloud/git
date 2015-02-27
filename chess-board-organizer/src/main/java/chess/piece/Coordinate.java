@@ -56,6 +56,15 @@ public class Coordinate {
 	public String toString() {
 		return String.valueOf(x)+ ";" + String.valueOf(y);
 	}
+	@Override
+	public boolean equals(Object obj) {
+		if(obj!=null && obj instanceof Coordinate)
+		{
+			return ((Coordinate)obj).getX()==getX() && ((Coordinate)obj).getY()==getY();
+		}else{
+			return false;
+		}
+	}
 	
 	
 }

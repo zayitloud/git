@@ -56,6 +56,10 @@ public class Board {
 	
 	private Coordinate size;
 	
+	public Coordinate getSize() {
+		return size;
+	}
+
 	/**
 	 * Initializes a chess board as a matrix of size <code>m x n</code> passed in as parameters
 	 * @param m number of horizontal lines

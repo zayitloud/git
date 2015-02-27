@@ -1,6 +1,7 @@
 package chess;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +47,7 @@ public class Executor {
 		pool.add(new King());
 		pool.add(new Rook());
 		boardSize=new Coordinate("3;3");
-		maxNumberOfRetries=10;
+		maxNumberOfRetries=1000;
 		boards=new ArrayList<Board>();
 		
 	}
@@ -58,16 +59,13 @@ public class Executor {
 		List<String> availableSlots;
 		//to avoid checking a slot for a specific piece more than once
 		Map<String, Slot> occupiedSlotsPerPiece;
-		List<Coordinate> captureSlots;
-		boolean captureSlotsAreFree=true;
-		Board board, previousBoard=null;
+		Board board;
 		for(int retry=1; retry<=maxNumberOfRetries; retry++)
 		{
 
 			board = new Board(boardSize.getX(),boardSize.getY());
 			occupiedSlots = board.getOccupiedSlots();
 			availableSlots = board.getAvailableCoordinatesList();
-			captureSlotsAreFree=true;
 			for(Piece piece: pool)
 			{
 				occupiedSlotsPerPiece=board.getOccupiedSlots(piece.getClass().getName());
@@ -77,7 +75,6 @@ public class Executor {
 					Coordinate proposedPosition = new Coordinate(coordinate);
 					//if the available coordinate has been occupied before by the same type of piece
 					//for example, on a previous execution then ignore that coordinate
-//					if(occupiedSlotsPerPiece!=null && occupiedSlotsPerPiece.containsKey(coordinate))
 					if(matchPreviousCombinationOfCoordinates(
 							piece.getClass().getName(), 
 							occupiedSlotsPerPiece,
@@ -85,36 +82,21 @@ public class Executor {
 					{
 						continue;
 					}
-					//get the slots the piece can move to to check if they are available
-					//if any of the slots is occupied by another piece then the available slot cannot be used by this piece type
-					captureSlots = piece.getCaptureSlotsPositions(proposedPosition, boardSize);
-					for(Coordinate captureSlotCoordinate: captureSlots)
-					{
-						if(occupiedSlots.containsKey(captureSlotCoordinate.toString()))
-						{
-							captureSlotsAreFree=false;
-							break;
-						}
-					}
-					if(captureSlotsAreFree)
+					if(checkNewPieceOnBoard(piece, proposedPosition, board))
 					{
 						board.addPiece(piece, proposedPosition);
 						break;
 					}
-					captureSlotsAreFree=true;
 						
 				}
 			}
-			log.info("*************Retry " + retry);
 			if(occupiedSlots.size()==pool.size())
 			{
+				log.info("*************Retry " + retry);
 				successCount++;
 				board.print();
 				boards.add(board);
-			}else{
-				log.info("No combination has been found, trying again");
-			}
-			previousBoard=board;
+			}//else no combination has been found
 		}
 		log.info("Success combinations found: " + successCount);
 		log.info("Number of calculations: " + maxNumberOfRetries);
@@ -169,17 +151,34 @@ public class Executor {
 		return false;
 	}
 	
-	private boolean areCaptureSlotsFree(Piece piece, Coordinate boardSize, Coordinate proposedPosition, Map<String,Slot> occupiedSlots)
+	/**
+	 * Checks two conditions:<br>
+	 * <ol>
+	 * <li>That the already placed pieces are not contained in the capture slot coordinates of the new piece.
+	 * <li>that the new piece coordinate is not contained in the capture slots coordinates of the pieces 
+	 * already placed in the board
+	 * @param piece the new piece to be added
+	 * @param proposedPosition the new piece coordinates
+	 * @param board the board
+	 * @return true if the above conditions are met, false otherwise
+	 */
+	private boolean checkNewPieceOnBoard(Piece piece, Coordinate proposedPosition, Board board)
 	{
-		List<Coordinate> captureSlots = piece.getCaptureSlotsPositions(proposedPosition, boardSize);
-		for(Coordinate captureSlotCoordinate: captureSlots)
-		{
-			if(occupiedSlots.containsKey(captureSlotCoordinate.toString()))
-			{
-				return false;
-			}
-		}
-		return true;
+		 Map<String,Slot> occupiedSlots=board.getOccupiedSlots();
+		 Collection<Slot> slots=occupiedSlots.values();
+		 List<Coordinate> capturedSlotsNewPiece = piece.getCaptureSlotsPositions(proposedPosition, board.getSize());
+		 for(Slot slot: slots)
+		 {
+			 //Check if the new piece captured slots coordinates contains the occupied slot coordinate
+			 //and check that the occupied piece capture slot coordinate does not contain the new position
+			 if(capturedSlotsNewPiece.contains(slot.getCoordinate()) || 
+						//TODO cache this on a piece class attribute
+					 slot.getPiece().getCaptureSlotsPositions(slot.getCoordinate(), board.getSize()).contains(proposedPosition))
+			 {
+				 return false;
+			 }
+		 }
+		 return true;
 	}
 	
 	public static void main(String args[])
