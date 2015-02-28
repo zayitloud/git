@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import chess.board.Board;
 import chess.board.Slot;
+import chess.piece.Bishop;
 import chess.piece.Coordinate;
 import chess.piece.King;
 import chess.piece.Knight;
@@ -49,8 +50,10 @@ public class Executor {
 		pool.add(new Rook());
 		pool.add(new Knight());
 		pool.add(new Knight());
-		boardSize=new Coordinate("4;4");
-		maxNumberOfRetries=10000;
+		pool.add(new Bishop());
+		pool.add(new Bishop());
+		boardSize=new Coordinate("7;7");
+		maxNumberOfRetries=40000;
 		boards=new ArrayList<Board>();
 		
 	}
