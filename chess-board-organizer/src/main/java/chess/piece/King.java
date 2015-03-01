@@ -8,11 +8,11 @@ import java.util.List;
  * @author 30032751
  *
  */
-public class King implements Piece {
+public class King extends Piece {
 
 
 	@Override
-	public List<Coordinate> getCaptureSlotsPositions(Coordinate position,
+	public List<Coordinate> calculateCapturePositions(Coordinate position,
 			Coordinate size) {
 		List<Coordinate> coordinates= new ArrayList<Coordinate>();
 		for(int x=position.getX()-1; x<=position.getX()+1; x++)

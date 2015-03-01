@@ -273,7 +273,6 @@ public class Executor {
 			 //Check if the new piece captured slots coordinates contains the occupied slot coordinate
 			 //and check that the occupied piece capture slot coordinate does not contain the new position
 			 if(capturedSlotsNewPiece.contains(slot.getCoordinate()) || 
-						//TODO cache this on a piece class attribute
 					 slot.getPiece().getCaptureSlotsPositions(slot.getCoordinate(), board.getSize()).contains(proposedPosition))
 			 {
 				 return false;

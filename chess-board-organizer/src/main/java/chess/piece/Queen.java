@@ -7,10 +7,10 @@ import java.util.List;
  * @author Willie
  *
  */
-public class Queen implements Piece {
+public class Queen extends Piece {
 
 	@Override
-	public List<Coordinate> getCaptureSlotsPositions(Coordinate position,
+	public List<Coordinate> calculateCapturePositions(Coordinate position,
 			Coordinate size) {
 		List<Coordinate> coordinates= new ArrayList<Coordinate>();
 		coordinates.addAll(new Rook().getCaptureSlotsPositions(position, size));

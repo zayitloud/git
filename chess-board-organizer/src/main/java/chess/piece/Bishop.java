@@ -8,10 +8,10 @@ import java.util.List;
  * @author Willie
  *
  */
-public class Bishop implements Piece {
+public class Bishop extends Piece {
 
 	@Override
-	public List<Coordinate> getCaptureSlotsPositions(Coordinate position,
+	protected List<Coordinate> calculateCapturePositions(Coordinate position,
 			Coordinate size) {
 		List<Coordinate> coordinates= new ArrayList<Coordinate>();
 		int xCoord=position.getX()-1;

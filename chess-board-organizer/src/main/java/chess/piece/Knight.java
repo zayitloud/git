@@ -7,10 +7,10 @@ import java.util.List;
  * @author Willie
  *
  */
-public class Knight implements Piece {
+public class Knight extends Piece {
 
 	@Override
-	public List<Coordinate> getCaptureSlotsPositions(Coordinate position,
+	public List<Coordinate> calculateCapturePositions(Coordinate position,
 			Coordinate size) {
 		List<Coordinate> coordinates= new ArrayList<Coordinate>();
 		for(int x=position.getX()-2; x<=position.getX()+2; x+=2)

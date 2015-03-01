@@ -8,10 +8,10 @@ import java.util.List;
  * @author Willie
  *
  */
-public class Rook implements Piece {
+public class Rook extends Piece {
 
 	@Override
-	public List<Coordinate> getCaptureSlotsPositions(Coordinate position,
+	public List<Coordinate> calculateCapturePositions(Coordinate position,
 			Coordinate size) {
 		List<Coordinate> coordinates= new ArrayList<Coordinate>();
 		for(int x=1; x<=size.getX(); x++)
