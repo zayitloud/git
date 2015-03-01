@@ -310,14 +310,14 @@ public class Executor {
 	 * <ol>
 	 * <li>M size of the board
 	 * <li>N size of the board
-	 * <li>Number of Queens
 	 * <li>Number of Kings
+	 * <li>Number of Queens
 	 * <li>Number of Bishop
 	 * <li>Number of Knights
 	 * <li>Number of Rooks (may be 0)
 	 * <li>Number of retries: the number of times the routine is going to look for possible piece combinations (optional
 	 * 0 or empty if desired). 
-	 * @param args
+	 * @param args the array of parameters
 	 */
 	public static void main(String args[])
 	{
