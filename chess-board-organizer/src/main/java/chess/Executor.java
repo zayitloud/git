@@ -38,7 +38,7 @@ public class Executor {
 	private List<Piece> pool;
 	
 	/**
-	 * To store the boards configuration per run
+	 * To store the boards configuration per execution
 	 */
 	private List<Board> boards;
 	
@@ -49,6 +49,9 @@ public class Executor {
 	
 	private Logger log= LoggerFactory.getLogger(Executor.class);
 	
+	/**
+	 * Execution parameters
+	 */
 	private String args[];
 	/**
 	 * Default constructor
@@ -195,6 +198,7 @@ public class Executor {
 	 */
 	private boolean matchPreviousCombinationOfCoordinates(String pieceType, Map<String,Slot> currentCombination, String newPosition)
 	{
+		//if it is the first piece tp be added to the board return false 
 		if(currentCombination==null)
 		{
 			return false;
@@ -207,7 +211,8 @@ public class Executor {
 		{
 			matchesCombination=true;
 			previousCombination = board.getOccupiedSlots(pieceType);
-			//if the combinations are not the same size we still don't know
+			//if the combinations are not the same size we still don't know if they match
+			//in which case false is returned
 			if(currentCombination.size()+1==previousCombination.size())
 			{
 				for(String coordinates: currentCombination.keySet())
@@ -220,6 +225,8 @@ public class Executor {
 						break;
 					}
 				}
+				//if all current combinations match any the previous combination of coordinates then
+				//we check if the position where the new piece will be added matches also the previous combination 
 				if(matchesCombination)
 				{
 					if(previousCombination.containsKey(newPosition))

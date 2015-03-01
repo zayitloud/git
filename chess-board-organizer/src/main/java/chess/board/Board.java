@@ -94,13 +94,11 @@ public class Board {
 	 * 
 	 * @param m number of horizontal lines
 	 * @param n number of vertical lines
-	 * @param occupiedSlots coordinates and slots where pieces may not be placed
-	 * @param occupiedSlotsByPieceType 
+	 * @param occupiedSlotsByPieceType the slots occupied per piece type (this is useful for previous executions) 
 	 */
-	public Board(int m, int n,/* Map<String,Slot> occupiedSlots,*/ Map<String,Map<String,Slot>> occupiedSlotsByPieceType)
+	public Board(int m, int n, Map<String,Map<String,Slot>> occupiedSlotsByPieceType)
 	{
 		this(m,n);
-//		this.occupiedSlotsMap.putAll(occupiedSlots);
 		this.occupiedSlotsByPieceType.putAll(occupiedSlotsByPieceType);
 	}	
 
