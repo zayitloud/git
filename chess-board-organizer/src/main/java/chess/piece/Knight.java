@@ -2,7 +2,11 @@ package chess.piece;
 
 import java.util.ArrayList;
 import java.util.List;
-
+/**
+ * This class represents a Knight on chess game
+ * @author Willie
+ *
+ */
 public class Knight implements Piece {
 
 	@Override

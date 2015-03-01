@@ -12,6 +12,11 @@ public class Coordinate {
 	private int x;
 	private int y;
 
+	/**
+	 * Constructor that takes as parameter a coordinate represented by a string which must comply
+	 * with the following structure: <code>x;y</code> 
+	 * @param xy the coordinate with the  structure <code>x;y</code>
+	 */
 	public Coordinate(String xy)
 	{
 		if(StringUtils.isBlank(xy))

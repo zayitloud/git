@@ -3,6 +3,11 @@ package chess.piece;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This class represents a Rook on a chess game
+ * @author Willie
+ *
+ */
 public class Rook implements Piece {
 
 	@Override

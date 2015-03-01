@@ -16,6 +16,7 @@ import chess.piece.Coordinate;
 import chess.piece.King;
 import chess.piece.Knight;
 import chess.piece.Piece;
+import chess.piece.Queen;
 import chess.piece.Rook;
 
 /**
@@ -26,6 +27,9 @@ import chess.piece.Rook;
  */
 public class Executor {
 
+	/**
+	 * The number of times the Executor will look for the combination of pieces on the chess board
+	 */
 	private int maxNumberOfRetries;
 	
 	/**
@@ -38,28 +42,99 @@ public class Executor {
 	 */
 	private List<Board> boards;
 	
+	/**
+	 * The size of the chess board
+	 */
 	private Coordinate boardSize;
 	
-	Logger log= LoggerFactory.getLogger(Executor.class);
+	private Logger log= LoggerFactory.getLogger(Executor.class);
 	
+	private String args[];
+	/**
+	 * Default constructor
+	 */
 	public Executor()
 	{
-		pool = new ArrayList<Piece>();
-		pool.add(new King());
-		pool.add(new King());
-		pool.add(new Rook());
-		pool.add(new Knight());
-		pool.add(new Knight());
-		pool.add(new Bishop());
-		pool.add(new Bishop());
-		boardSize=new Coordinate("7;7");
-		maxNumberOfRetries=40000;
+		this(new String[]{"6","6","2","1","2","2","1","10000"});		
+	}
+	/**
+	 * Constructor of the Executor class which takes as parameter an array of strings which <b>must</b> contain
+	 * the following parameters in the indicated order:
+	 * <ol>
+	 * <li>M size of the board
+	 * <li>N size of the board
+	 * <li>Number of Kings
+	 * <li>Number of Queens
+	 * <li>Number of Bishop
+	 * <li>Number of Knights
+	 * <li>Number of Rooks (may be 0)
+	 * <li>Number of retries: the number of times the routine is going to look for possible piece combinations (optional
+	 * 0 or empty if desired). 
+	 * @param args the array of strings containing the parameters defined above
+	 * @throws RuntimeException in case the parameters are incorrect or missing
+	 */
+	public Executor(String args[])
+	{
+		if(args.length<7 || args.length>8)
+		{
+			throw new RuntimeException("Incorrect number of parameters");
+		}
+		this.args=args;
 		boards=new ArrayList<Board>();
+		boardSize= new Coordinate(args[0]+";"+args[1]);
+		pool = new ArrayList<Piece>();
+		try {
+			fillPool(Integer.parseInt(args[2]), King.class.getCanonicalName());
+			fillPool(Integer.parseInt(args[3]), Queen.class.getCanonicalName());
+			fillPool(Integer.parseInt(args[4]), Bishop.class.getCanonicalName());
+			fillPool(Integer.parseInt(args[5]), Knight.class.getCanonicalName());
+			fillPool(Integer.parseInt(args[6]), Rook.class.getCanonicalName());
+			if(args.length==8)
+			{
+				maxNumberOfRetries=Integer.parseInt(args[7]);
+			}else{
+				maxNumberOfRetries=5000;
+			}
+			
+		} catch (NumberFormatException | InstantiationException
+				| IllegalAccessException | ClassNotFoundException e) {
+			log.error("Error creating the Executor",e);
+			throw new RuntimeException("Error creating the executor",e);
+		}
 		
 	}
-	
+
+	/**
+	 * Creates the number of instances defined in className and adds them to the Pieces pool
+	 * @param quantity the number of instances to create
+	 * @param className the qualified name of the class to be instantiated 
+	 * @throws InstantiationException in case there is an error instantiating the class
+	 * @throws IllegalAccessException in case there is an error instantiating the class
+	 * @throws ClassNotFoundException in case there is an error instantiating the class
+	 */
+	private void fillPool(int quantity, String className) throws InstantiationException, IllegalAccessException, ClassNotFoundException
+	{
+		if(pool==null){
+			pool= new ArrayList<Piece>();
+		}
+		for(int i=0; i<quantity;i++)
+		{
+			pool.add((Piece) Class.forName(className).newInstance());
+		}
+		
+	}
+	/**
+	 * This method searches for all the piece combinations of piece positions possible on a chess board
+	 * based on 3 parameters:
+	 * <ol>
+	 * <li>The type of pieces to be placed on the chess board
+	 * <li>The size of the chess board
+	 * <li>The maximum number of times the routine will be executed to obtain the possible combinations.
+	 * </ol> 
+	 */
 	public void start()
 	{
+		printExecutionParameters();
 		int successCount=0;
 		Map<String, Slot> occupiedSlots;
 		List<String> availableSlots;
@@ -104,6 +179,7 @@ public class Executor {
 				boards.add(board);
 			}//else no combination has been found
 		}
+		printExecutionParameters();
 		log.info("Success combinations found: " + successCount);
 		log.info("Number of calculations: " + maxNumberOfRetries);
 		
@@ -187,9 +263,48 @@ public class Executor {
 		 return true;
 	}
 	
+	/**
+	 * prints in the logs the execution parameters sent to the Executor
+	 */
+	private void printExecutionParameters()
+	{
+		log.info("Execution parameters:");
+		log.info("Board size: " + args[0]+"x"+args[1]);
+		log.info("#Kings: " + args[2]);
+		log.info("#Queens: " + args[3]);
+		log.info("#Bishops: " + args[4]);
+		log.info("#Knights: " + args[5]);
+		log.info("#Rooks: " + args[6]);
+		if(args.length==8)
+		{
+			log.info("Number of retries: " + args[7]);
+		}else{
+			log.info("Number of retries: "+ maxNumberOfRetries+ " (default - not provided)");
+			
+		}
+		
+	}
+	
+	/**
+	 * Main method which is the entry point to execute the routine to calculate the number of position combinations
+	 * on a chess board without threatening each other. This method takes as parameter an array of strings which <b>must</b> contain
+	 * the following parameters in the indicated order:
+	 * <ol>
+	 * <li>M size of the board
+	 * <li>N size of the board
+	 * <li>Number of Queens
+	 * <li>Number of Kings
+	 * <li>Number of Bishop
+	 * <li>Number of Knights
+	 * <li>Number of Rooks (may be 0)
+	 * <li>Number of retries: the number of times the routine is going to look for possible piece combinations (optional
+	 * 0 or empty if desired). 
+	 * @param args
+	 */
 	public static void main(String args[])
 	{
-		new Executor().start();
+		new Executor(args).start();
+//		new Executor().start();
 	}
 	
 }
