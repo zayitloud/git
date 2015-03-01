@@ -42,6 +42,17 @@ public class Slot {
 	public void setPiece(Piece piece) {
 		this.piece = piece;
 	}
+	@Override
+	public String toString() {
+		if(piece!=null)
+		{
+			return coordinate.toString() + "/" + piece.getClass().getName();
+		}else{
+			return coordinate.toString() + "/" + null;
+		}
+	}
+	
 	
 	
 }
+ 

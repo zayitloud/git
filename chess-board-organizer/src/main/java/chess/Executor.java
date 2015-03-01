@@ -141,8 +141,6 @@ public class Executor {
 		int successCount=0;
 		Map<String, Slot> occupiedSlots;
 		List<String> availableSlots;
-		//to avoid checking a slot for a specific piece more than once
-		Map<String, Slot> occupiedSlotsPerPiece;
 		Board board;
 		for(int retry=1; retry<=maxNumberOfRetries; retry++)
 		{
@@ -152,7 +150,7 @@ public class Executor {
 			availableSlots = board.getAvailableCoordinatesList();
 			for(Piece piece: pool)
 			{
-				occupiedSlotsPerPiece=board.getOccupiedSlots(piece.getClass().getName());
+				occupiedSlots=board.getOccupiedSlots();
 				Collections.shuffle(availableSlots);
 				for(String coordinate: availableSlots)
 				{
@@ -161,7 +159,7 @@ public class Executor {
 					//for example, on a previous execution then ignore that coordinate
 					if(matchPreviousCombinationOfCoordinates(
 							piece.getClass().getName(), 
-							occupiedSlotsPerPiece,
+							occupiedSlots,
 							coordinate))
 					{
 						continue;
@@ -174,7 +172,7 @@ public class Executor {
 						
 				}
 			}
-			if(occupiedSlots.size()==pool.size())
+			if(board.getOccupiedSlots().size()==pool.size())
 			{
 				log.info("*************Retry " + retry);
 				successCount++;
@@ -187,50 +185,64 @@ public class Executor {
 		log.info("Number of calculations: " + maxNumberOfRetries);
 		
 	}
-	
+
 	/**
 	 * Checks whether the current arrangement of positions (in coordinates) matches any of the arrangements of previous boards<br/>
-	 * To achieve this every position  on the current arrangements is looked up in the previous boards arrangements.
-	 * @param pieceType 
-	 * @param currentCombination the current pieces positions
-	 * @param newPosition the last position being added to the current positions
-	 * @return true if the arrangement matches any of the previous boards arrangements 
+	 * To achieve this every position  on the current arrangements is looked up in the previous boards arrangements to make sure the position exists in previous boards
+	 * and that the type of piece in the same in the current and previous boards
+	 * @param pieceType the type of the new piece that will be added to the board
+	 * @param currentCombination the arrangement of pieces in the current board
+	 * @param newPosition the last position being added to the current positions the coordinate where the new piece will be added
+	 * @return true if the arrangement matches any of the previous boards arrangements (the same position and the same piece type), false otherwise
 	 */
 	private boolean matchPreviousCombinationOfCoordinates(String pieceType, Map<String,Slot> currentCombination, String newPosition)
 	{
-		//if it is the first piece tp be added to the board return false 
+		//if it is the first piece to be added to the board return false 
 		if(currentCombination==null)
 		{
 			return false;
 		}
 		Map<String, Slot> previousCombination;
+
 		boolean matchesCombination=true;
 		//the slot position for a given piece type is compared with 
 		//slot positions on previous boards to avoid repeating positions
 		for(Board board:boards)
 		{
 			matchesCombination=true;
-			previousCombination = board.getOccupiedSlots(pieceType);
+			previousCombination = board.getOccupiedSlots();
 			//if the combinations are not the same size we still don't know if they match
 			//in which case false is returned
 			if(currentCombination.size()+1==previousCombination.size())
 			{
 				for(String coordinates: currentCombination.keySet())
 				{
-					if(!previousCombination.containsKey(coordinates))
+					
+					//if the previous positions does not contain any of the  positions
+					//it is not the same combination OR
+					//the piece on the current board position combination is not the same type as the piece
+					//in the previous board position combination then the combination is different so
+					//there's no need to look further					
+					if(!previousCombination.containsKey(coordinates) ||
+							!currentCombination.get(coordinates).getPiece().getClass().getName().equals(
+									previousCombination.get(coordinates).getPiece().getClass().getName()))
 					{
-						//if the previous positions does not contain any of the  positions
-						//it is not the same combination
 						matchesCombination=false;
 						break;
 					}
 				}
-				//if all current combinations match any the previous combination of coordinates then
-				//we check if the position where the new piece will be added matches also the previous combination 
+				//if current combination matches any the previous combination of coordinates then
+				//we check if the position where the new piece will be added matches also the position and the 
+				//piece type on the previous combination 
 				if(matchesCombination)
 				{
-					if(previousCombination.containsKey(newPosition))
+					if(previousCombination.containsKey(newPosition) && pieceType.equals(
+							previousCombination.get(newPosition).getPiece().getClass().getName()))
 					{
+						
+						log.debug("Duplicate combination found");
+						log.debug(currentCombination.toString() + newPosition + "/" + pieceType);
+						log.debug(previousCombination.toString());
 						return true;
 					}
 				}
