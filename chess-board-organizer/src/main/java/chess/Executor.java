@@ -1,6 +1,7 @@
 package chess;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -53,12 +54,15 @@ public class Executor {
 	 * Execution parameters
 	 */
 	private String args[];
+
+	private long acumulado;
 	/**
 	 * Default constructor
 	 */
 	public Executor()
 	{
-		this(new String[]{"6","6","2","1","2","2","1","10000"});		
+//		this(new String[]{"6","6","2","1","2","2","1","10000"});		
+		this(new String[]{"3","3","0","0","0","3","1","10000"});		
 	}
 	/**
 	 * Constructor of the Executor class which takes as parameter an array of strings which <b>must</b> contain
@@ -142,6 +146,7 @@ public class Executor {
 		Map<String, Slot> occupiedSlots;
 		List<String> availableSlots;
 		Board board;
+		int occupiedSlotsSize=0;
 		for(int retry=1; retry<=maxNumberOfRetries; retry++)
 		{
 
@@ -157,32 +162,39 @@ public class Executor {
 					Coordinate proposedPosition = new Coordinate(coordinate);
 					//if the available coordinate has been occupied before by the same type of piece
 					//for example, on a previous execution then ignore that coordinate
-					if(matchPreviousCombinationOfCoordinates(
+					long initMillis= Calendar.getInstance().getTimeInMillis();
+					if(occupiedSlotsSize+1==pool.size() && matchPreviousCombinationOfCoordinates(
 							piece.getClass().getName(), 
 							occupiedSlots,
 							coordinate))
 					{
+//						log.info("Tiempo de ejecución " + (Calendar.getInstance().getTimeInMillis() - initMillis));
+						acumulado+=Calendar.getInstance().getTimeInMillis() - initMillis;
 						continue;
 					}
+//					log.info("Tiempo de ejecución " + (Calendar.getInstance().getTimeInMillis() - initMillis));
+					acumulado+=Calendar.getInstance().getTimeInMillis() - initMillis;
 					if(checkNewPieceOnBoard(piece, proposedPosition, board))
 					{
 						board.addPiece(piece, proposedPosition);
 						break;
 					}
-						
+					occupiedSlotsSize=occupiedSlots.size();	
 				}
 			}
 			if(board.getOccupiedSlots().size()==pool.size())
 			{
 				log.info("*************Retry " + retry);
 				successCount++;
-				board.print();
+//				board.print();
 				boards.add(board);
 			}//else no combination has been found
 		}
 		printExecutionParameters();
 		log.info("Success combinations found: " + successCount);
 		log.info("Number of calculations: " + maxNumberOfRetries);
+		log.info("Acumulado " + acumulado/1000);
+		log.info("Acumulado " + acumulado/(1000*60));
 		
 	}
 
@@ -204,6 +216,7 @@ public class Executor {
 		}
 		Map<String, Slot> previousCombination;
 
+		int currentCombinationSize=currentCombination.size()+1;
 		boolean matchesCombination=true;
 		//the slot position for a given piece type is compared with 
 		//slot positions on previous boards to avoid repeating positions
@@ -213,7 +226,7 @@ public class Executor {
 			previousCombination = board.getOccupiedSlots();
 			//if the combinations are not the same size we still don't know if they match
 			//in which case false is returned
-			if(currentCombination.size()+1==previousCombination.size())
+			if(currentCombinationSize==previousCombination.size())
 			{
 				for(String coordinates: currentCombination.keySet())
 				{
