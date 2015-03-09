@@ -54,12 +54,14 @@ public class Executor {
 	
 	private Logger log= LoggerFactory.getLogger(Executor.class);
 	
+	private int maxNumberOfParallelCheckers;
+	
 	/**
 	 * Execution parameters
 	 */
 	private String args[];
 
-	private long acumulado;
+	private long accumulatedTimeInMillis;
 
 	private ExecutorService es;
 	/**
@@ -67,9 +69,9 @@ public class Executor {
 	 */
 	public Executor()
 	{
-//		this(new String[]{"6","6","2","1","2","2","1","10000"});		
+//		this(new String[]{"6","6","2","1","2","2","1","700000"});		
 		this(new String[]{"3","3","2","0","0","0","1","1000000"});		
-//		this(new String[]{"4","4","0","0","0","4","2","100000"});		
+//		this(new String[]{"4","4","0","0","0","4","2","50000"});		
 	}
 	/**
 	 * Constructor of the Executor class which takes as parameter an array of strings which <b>must</b> contain
@@ -97,7 +99,7 @@ public class Executor {
 		boards=new ArrayList<Board>();
 		boardSize= new Coordinate(args[0]+";"+args[1]);
 		pool = new ArrayList<Piece>();
-		es = Executors.newFixedThreadPool(3);
+		es = Executors.newFixedThreadPool(4);
 		try {
 			fillPool(Integer.parseInt(args[2]), King.class.getCanonicalName());
 			fillPool(Integer.parseInt(args[3]), Queen.class.getCanonicalName());
@@ -110,7 +112,7 @@ public class Executor {
 			}else{
 				maxNumberOfRetries=5000;
 			}
-			
+			maxNumberOfParallelCheckers=12;
 		} catch (NumberFormatException | InstantiationException
 				| IllegalAccessException | ClassNotFoundException e) {
 			log.error("Error creating the Executor",e);
@@ -176,18 +178,16 @@ public class Executor {
 					{
 						continue;
 					}
-					if(!(occupiedSlotsSize+1==pool.size() && matchPreviousCombinationOfCoordinatesThreads(
+					if(!(occupiedSlotsSize+1==pool.size() && matchPreviousCombinationOfCoordinates(
 							piece.getClass().getName(), 
 							occupiedSlots,
 							coordinate)))
 					{
-//						log.info("Tiempo de ejecución " + (Calendar.getInstance().getTimeInMillis() - initMillis));
-						acumulado+=Calendar.getInstance().getTimeInMillis() - initMillis;
+						accumulatedTimeInMillis+=Calendar.getInstance().getTimeInMillis() - initMillis;
 						board.addPiece(piece, proposedPosition);
 						break;
 					}
-//					log.info("Tiempo de ejecución " + (Calendar.getInstance().getTimeInMillis() - initMillis));
-					acumulado+=Calendar.getInstance().getTimeInMillis() - initMillis;
+					accumulatedTimeInMillis+=Calendar.getInstance().getTimeInMillis() - initMillis;
 				}
 			}
 			if(board.getOccupiedSlots().size()==pool.size())
@@ -202,10 +202,11 @@ public class Executor {
 		printExecutionParameters();
 		log.info("Success combinations found: " + successCount);
 		log.info("Number of calculations: " + maxNumberOfRetries);
-		log.info("Acumulado " + acumulado/1000);
-		log.info("Acumulado " + acumulado/(1000*60));
+		log.info("Accumulated time in seconds " + accumulatedTimeInMillis/1000);
+		log.info("Accumulated time in minutes " + accumulatedTimeInMillis/(1000*60));
 		
 	}
+
 
 	/**
 	 * Checks whether the current arrangement of positions (in coordinates) matches any of the arrangements of previous boards<br/>
@@ -218,96 +219,26 @@ public class Executor {
 	 */
 	private boolean matchPreviousCombinationOfCoordinates(String pieceType, Map<String,Slot> currentCombination, String newPosition)
 	{
-		//if it is the first piece to be added to the board return false 
-		if(currentCombination==null)
+		if(boards.size()==0)
 		{
 			return false;
 		}
-		Map<String, Slot> previousCombination;
-
-		int currentCombinationSize=currentCombination.size()+1;
-		boolean matchesCombination=true;
-		//the slot position for a given piece type is compared with 
-		//slot positions on previous boards to avoid repeating positions
-		for(Board board:boards)
-		{
-			matchesCombination=true;
-			previousCombination = board.getOccupiedSlots();
-			//if the combinations are not the same size we still don't know if they match
-			//in which case false is returned
-			if(currentCombinationSize==previousCombination.size())
-			{
-				for(String coordinates: currentCombination.keySet())
-				{
-					
-					//if the previous positions does not contain any of the  positions
-					//it is not the same combination OR
-					//the piece on the current board position combination is not the same type as the piece
-					//in the previous board position combination then the combination is different so
-					//there's no need to look further					
-					if(!previousCombination.containsKey(coordinates) ||
-							!currentCombination.get(coordinates).getPiece().getClass().getName().equals(
-									previousCombination.get(coordinates).getPiece().getClass().getName()))
-					{
-						matchesCombination=false;
-						break;
-					}
-				}
-				//if current combination matches any the previous combination of coordinates then
-				//we check if the position where the new piece will be added matches also the position and the 
-				//piece type on the previous combination 
-				if(matchesCombination)
-				{
-					if(previousCombination.containsKey(newPosition) && pieceType.equals(
-							previousCombination.get(newPosition).getPiece().getClass().getName()))
-					{
-						
-						log.debug("Duplicate combination found");
-						log.debug(currentCombination.toString() + newPosition + "/" + pieceType);
-						log.debug(previousCombination.toString());
-						return true;
-					}
-				}
-			}
-			
-		}
-		return false;
-	}
-
-	/**
-	 * Checks whether the current arrangement of positions (in coordinates) matches any of the arrangements of previous boards<br/>
-	 * To achieve this every position  on the current arrangements is looked up in the previous boards arrangements to make sure the position exists in previous boards
-	 * and that the type of piece in the same in the current and previous boards
-	 * @param pieceType the type of the new piece that will be added to the board
-	 * @param currentCombination the arrangement of pieces in the current board
-	 * @param newPosition the last position being added to the current positions the coordinate where the new piece will be added
-	 * @return true if the arrangement matches any of the previous boards arrangements (the same position and the same piece type), false otherwise
-	 */
-	private boolean matchPreviousCombinationOfCoordinatesThreads(String pieceType, Map<String,Slot> currentCombination, String newPosition)
-	{
 		List<CheckerThread> list=new ArrayList<CheckerThread>();
 		List<Future<Boolean>> results=null;
-//		if(boards.size()>1000)
-//		{
-			int primer=Math.round(boards.size()/3);
-			CheckerThread checker1 = new CheckerThread(pieceType, currentCombination, newPosition, boards.subList(0,primer));
-			list.add(checker1);
-			int segundo=primer+primer;
-			CheckerThread checker2 = new CheckerThread(pieceType, currentCombination, newPosition, boards.subList(primer,segundo));
-			list.add(checker2);
-			int tercer=segundo+segundo;
-			if(tercer>boards.size())
+		int boardSize=boards.size();
+		int maxNumberOfCheckers=getNumberOfCheckers(boardSize);
+		int section=Math.round(boardSize/maxNumberOfCheckers);
+		int previousPosition=0;
+		for (int i=0; i<maxNumberOfCheckers;i++)
+		{
+			list.add(new CheckerThread(pieceType, currentCombination, newPosition, boards.subList(previousPosition,section)));
+			previousPosition=section;
+			section+=section;
+			if(section>boardSize)
 			{
-				tercer=boards.size();
+				section=boardSize;
 			}
-			CheckerThread checker3 = new CheckerThread(pieceType, currentCombination, newPosition, boards.subList(segundo, tercer));
-			list.add(checker3);
-			
-//		}else{
-//			CheckerThread checker1 = new CheckerThread(pieceType, currentCombination, newPosition, boards);
-//			list.add(checker1);
-//			
-//		}
+		}
 		try {
 			results = es.invokeAll(list);
 			for (Future<Boolean> result: results)
@@ -325,7 +256,39 @@ public class Executor {
 		return false;
 	}
 	
-	
+	/**
+	 * Return a number of parallel checkers dependent on the size of the list to be processed
+	 * @param size the size of the list to be processed
+	 * @return the number of parallel checkers
+	 */
+	private int getNumberOfCheckers(int size) {
+		if(size<10)
+		{
+			return 1;
+		}
+		if(size<50)
+		{
+			return 2;
+		}
+		if(size<100)
+		{
+			return 3;
+		}
+		if(size<1000)
+		{
+			return 4;
+		}
+		if(size<10000)
+		{
+			return 5;
+//		}
+//		if(size<50000)
+//		{
+//			return 6;
+		}else{
+			return maxNumberOfParallelCheckers;
+		}
+	}
 	/**
 	 * Checks two conditions:<br>
 	 * <ol>
