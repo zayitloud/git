@@ -13,7 +13,6 @@ public class CheckerThread implements Callable<Boolean> {
 	Map<String,Slot> currentCombination;
 	String newPosition;
 	List<Board> boards;
-	private Boolean duplicateCombinationFound;
 	
 	
 	public CheckerThread(String pieceType,
@@ -33,7 +32,6 @@ public class CheckerThread implements Callable<Boolean> {
 		//if it is the first piece to be added to the board return false 
 		if(currentCombination==null)
 		{
-			duplicateCombinationFound=false;
 			return false;
 		}
 		Map<String, Slot> previousCombination;
@@ -78,23 +76,13 @@ public class CheckerThread implements Callable<Boolean> {
 //						log.debug("Duplicate combination found");
 //						log.debug(currentCombination.toString() + newPosition + "/" + pieceType);
 //						log.debug(previousCombination.toString());
-						duplicateCombinationFound=true;
 						return true;
 					}
 				}
 			}
 			
 		}
-		duplicateCombinationFound=false;
 		return false;
 
 	}
-
-
-	public Boolean isDuplicateCombinationFound() {
-		return duplicateCombinationFound;
-	}
-
-
-
 }

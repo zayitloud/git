@@ -68,7 +68,8 @@ public class Executor {
 	public Executor()
 	{
 //		this(new String[]{"6","6","2","1","2","2","1","10000"});		
-		this(new String[]{"3","3","2","0","0","0","1","100"});		
+		this(new String[]{"3","3","2","0","0","0","1","1000000"});		
+//		this(new String[]{"4","4","0","0","0","4","2","100000"});		
 	}
 	/**
 	 * Constructor of the Executor class which takes as parameter an array of strings which <b>must</b> contain
@@ -163,6 +164,7 @@ public class Executor {
 			for(Piece piece: pool)
 			{
 				occupiedSlots=board.getOccupiedSlots();
+				occupiedSlotsSize=occupiedSlots.size();	
 				Collections.shuffle(availableSlots);
 				for(String coordinate: availableSlots)
 				{
@@ -170,23 +172,22 @@ public class Executor {
 					//if the available coordinate has been occupied before by the same type of piece
 					//for example, on a previous execution then ignore that coordinate
 					long initMillis= Calendar.getInstance().getTimeInMillis();
-					if(occupiedSlotsSize+1==pool.size() && matchPreviousCombinationOfCoordinatesThreads(
+					if(!checkNewPieceOnBoard(piece, proposedPosition, board))
+					{
+						continue;
+					}
+					if(!(occupiedSlotsSize+1==pool.size() && matchPreviousCombinationOfCoordinatesThreads(
 							piece.getClass().getName(), 
 							occupiedSlots,
-							coordinate))
+							coordinate)))
 					{
 //						log.info("Tiempo de ejecución " + (Calendar.getInstance().getTimeInMillis() - initMillis));
 						acumulado+=Calendar.getInstance().getTimeInMillis() - initMillis;
-						continue;
-					}
-//					log.info("Tiempo de ejecución " + (Calendar.getInstance().getTimeInMillis() - initMillis));
-					acumulado+=Calendar.getInstance().getTimeInMillis() - initMillis;
-					if(checkNewPieceOnBoard(piece, proposedPosition, board))
-					{
 						board.addPiece(piece, proposedPosition);
 						break;
 					}
-					occupiedSlotsSize=occupiedSlots.size();	
+//					log.info("Tiempo de ejecución " + (Calendar.getInstance().getTimeInMillis() - initMillis));
+					acumulado+=Calendar.getInstance().getTimeInMillis() - initMillis;
 				}
 			}
 			if(board.getOccupiedSlots().size()==pool.size())
@@ -284,7 +285,6 @@ public class Executor {
 	 */
 	private boolean matchPreviousCombinationOfCoordinatesThreads(String pieceType, Map<String,Slot> currentCombination, String newPosition)
 	{
-		
 		List<CheckerThread> list=new ArrayList<CheckerThread>();
 		List<Future<Boolean>> results=null;
 //		if(boards.size()>1000)
