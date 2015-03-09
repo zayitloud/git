@@ -6,6 +6,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,13 +60,15 @@ public class Executor {
 	private String args[];
 
 	private long acumulado;
+
+	private ExecutorService es;
 	/**
 	 * Default constructor
 	 */
 	public Executor()
 	{
 //		this(new String[]{"6","6","2","1","2","2","1","10000"});		
-		this(new String[]{"3","3","0","0","0","3","1","10000"});		
+		this(new String[]{"3","3","2","0","0","0","1","100"});		
 	}
 	/**
 	 * Constructor of the Executor class which takes as parameter an array of strings which <b>must</b> contain
@@ -90,6 +96,7 @@ public class Executor {
 		boards=new ArrayList<Board>();
 		boardSize= new Coordinate(args[0]+";"+args[1]);
 		pool = new ArrayList<Piece>();
+		es = Executors.newFixedThreadPool(3);
 		try {
 			fillPool(Integer.parseInt(args[2]), King.class.getCanonicalName());
 			fillPool(Integer.parseInt(args[3]), Queen.class.getCanonicalName());
@@ -163,7 +170,7 @@ public class Executor {
 					//if the available coordinate has been occupied before by the same type of piece
 					//for example, on a previous execution then ignore that coordinate
 					long initMillis= Calendar.getInstance().getTimeInMillis();
-					if(occupiedSlotsSize+1==pool.size() && matchPreviousCombinationOfCoordinates(
+					if(occupiedSlotsSize+1==pool.size() && matchPreviousCombinationOfCoordinatesThreads(
 							piece.getClass().getName(), 
 							occupiedSlots,
 							coordinate))
@@ -186,10 +193,11 @@ public class Executor {
 			{
 				log.info("*************Retry " + retry);
 				successCount++;
-//				board.print();
+				board.print();
 				boards.add(board);
 			}//else no combination has been found
 		}
+		es.shutdown();
 		printExecutionParameters();
 		log.info("Success combinations found: " + successCount);
 		log.info("Number of calculations: " + maxNumberOfRetries);
@@ -264,6 +272,59 @@ public class Executor {
 		}
 		return false;
 	}
+
+	/**
+	 * Checks whether the current arrangement of positions (in coordinates) matches any of the arrangements of previous boards<br/>
+	 * To achieve this every position  on the current arrangements is looked up in the previous boards arrangements to make sure the position exists in previous boards
+	 * and that the type of piece in the same in the current and previous boards
+	 * @param pieceType the type of the new piece that will be added to the board
+	 * @param currentCombination the arrangement of pieces in the current board
+	 * @param newPosition the last position being added to the current positions the coordinate where the new piece will be added
+	 * @return true if the arrangement matches any of the previous boards arrangements (the same position and the same piece type), false otherwise
+	 */
+	private boolean matchPreviousCombinationOfCoordinatesThreads(String pieceType, Map<String,Slot> currentCombination, String newPosition)
+	{
+		
+		List<CheckerThread> list=new ArrayList<CheckerThread>();
+		List<Future<Boolean>> results=null;
+//		if(boards.size()>1000)
+//		{
+			int primer=Math.round(boards.size()/3);
+			CheckerThread checker1 = new CheckerThread(pieceType, currentCombination, newPosition, boards.subList(0,primer));
+			list.add(checker1);
+			int segundo=primer+primer;
+			CheckerThread checker2 = new CheckerThread(pieceType, currentCombination, newPosition, boards.subList(primer,segundo));
+			list.add(checker2);
+			int tercer=segundo+segundo;
+			if(tercer>boards.size())
+			{
+				tercer=boards.size();
+			}
+			CheckerThread checker3 = new CheckerThread(pieceType, currentCombination, newPosition, boards.subList(segundo, tercer));
+			list.add(checker3);
+			
+//		}else{
+//			CheckerThread checker1 = new CheckerThread(pieceType, currentCombination, newPosition, boards);
+//			list.add(checker1);
+//			
+//		}
+		try {
+			results = es.invokeAll(list);
+			for (Future<Boolean> result: results)
+			{
+				if(result.get())
+				{
+					return true;
+				}
+			}
+		} catch (InterruptedException e) {
+			log.error("Error executing parallel process" ,e);
+		} catch (ExecutionException e) {
+			log.error("Error executing parallel process" ,e);
+		}
+		return false;
+	}
+	
 	
 	/**
 	 * Checks two conditions:<br>
@@ -334,8 +395,8 @@ public class Executor {
 	 */
 	public static void main(String args[])
 	{
-		new Executor(args).start();
-//		new Executor().start();
+//		new Executor(args).start();
+		new Executor().start();
 	}
 	
 }
