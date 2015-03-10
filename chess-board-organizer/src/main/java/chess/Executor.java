@@ -65,6 +65,9 @@ public class Executor {
 	private long accumulatedTimeInMillis;
 
 	private ExecutorService es;
+	
+	private final short DIRECTION_X=0;
+	private final short DIRECTION_Y=1;
 	/**
 	 * Default constructor
 	 */
@@ -72,7 +75,7 @@ public class Executor {
 	{
 //		this(new String[]{"6","6","2","1","2","2","1","700000"});		
 //		this(new String[]{"3","3","2","0","0","0","1","100"});		
-		this(new String[]{"4","4","0","0","0","4","2","3000"});		
+		this(new String[]{"4","4","0","0","0","4","2","500"});		
 	}
 	/**
 	 * Constructor of the Executor class which takes as parameter an array of strings which <b>must</b> contain
@@ -198,7 +201,16 @@ public class Executor {
 				log.info("*************Retry " + retry);
 				successCount++;
 				board.print();
+				List<Board> list = getAlternateBoards(board);
+//				log.info("****Alternate boards");
+				for(Board bo: list)
+				{
+					log.info("-------");
+					bo.print();
+					successCount++;
+				}
 				boards.add(board);
+				boards.addAll(list);
 			}//else no combination has been found
 		}
 		es.shutdown();
@@ -338,6 +350,87 @@ public class Executor {
 		}
 		
 	}
+	
+	/**
+	 * Returns all the possible boards combinations for a given board
+	 * @param board the board that will be used as a base to calculate the new configurations
+	 * @return the list of board configurations, an empty list if no configurations are found
+	 */
+	private List<Board> getAlternateBoards(Board board)
+	{
+		List<Board> list= new ArrayList<Board>();
+		Board auxBoard=getAlternateBoard(board, DIRECTION_X);
+		if(auxBoard!=null)
+		{
+			list.add(auxBoard);
+		}
+		auxBoard=getAlternateBoard(board,DIRECTION_Y);
+		if(auxBoard!=null)
+		{
+			list.add(auxBoard);
+			auxBoard=getAlternateBoard(auxBoard, DIRECTION_X);
+			if(auxBoard!=null)
+			{
+				list.add(auxBoard);
+			}
+		}
+		return list;
+	}
+	
+	private Board getAlternateBoard(Board board, short direction)
+	{
+		Board alternateBoard= new Board(board.getSize().getX(),board.getSize().getY());
+		Map<String, Slot> occupiedSlots = board.getOccupiedSlots();
+		Collection<Slot> values = occupiedSlots.values();
+//		List<Board> list= new ArrayList<Board>();
+//		for(Slot slot:values)
+//		{
+//			Slot pivotSlot= slot;
+//			break;
+//		}
+		int newCoordinate=0, boardSize=0;
+		Coordinate coordinate;
+		if(direction==DIRECTION_X)
+		{
+			boardSize=board.getSize().getX();
+		}else{
+			boardSize=board.getSize().getY();
+		}
+		for(Slot slot:values)
+		{
+			if(direction==DIRECTION_X)
+			{
+				newCoordinate=slot.getCoordinate().getX()+1;
+			}else{
+				newCoordinate=slot.getCoordinate().getY()+1;
+			}
+			if(newCoordinate>boardSize)
+			{
+				newCoordinate=1;
+			}
+			Piece piece=null;
+			try {
+				piece=slot.getPiece().getClass().newInstance();
+				if(direction==DIRECTION_X)
+				{
+					coordinate=new Coordinate(newCoordinate,slot.getCoordinate().getY());
+				}else{
+					coordinate=new Coordinate(slot.getCoordinate().getX(),newCoordinate);
+				}
+				if(checkNewPieceOnBoard(piece, coordinate, alternateBoard))
+				{
+					alternateBoard.addPiece(piece, coordinate);
+				}else{
+					return null;
+				}
+			} catch (InstantiationException | IllegalAccessException e) {
+				log.error("Error checking for alternate boards",e);
+				return null;
+			}
+		}
+		return alternateBoard;
+	}
+	
 	
 	/**
 	 * Main method which is the entry point to execute the routine to calculate the number of position combinations
