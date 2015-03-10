@@ -81,9 +81,9 @@ public class Board {
 			{
 				slot=new Slot(new Coordinate(i, j),null);
 				key=String.valueOf(i) + ";" + String.valueOf(j);
-				availableSlots.put(key,slot);
-				slots.put(key,slot);
-				availableCoordinatesList.add(key);
+				availableSlots.put(key.intern(),slot);
+				slots.put(key.intern(),slot);
+				availableCoordinatesList.add(key.intern());
 			}
 		}
 	}
@@ -126,10 +126,10 @@ public class Board {
 	 */
 	private void addOccupiedSlot(Slot slot) {
 		String strCoordinate = slot.getCoordinate().toString();
-		occupiedSlotsMap.put(strCoordinate,slot);
+		occupiedSlotsMap.put(strCoordinate.intern(),slot);
 		if(!occupiedSlotsByPieceType.containsKey(slot.getPiece().getClass().getName()))
 		{
-			occupiedSlotsByPieceType.put(slot.getPiece().getClass().getName(), new HashMap<String,Slot>());
+			occupiedSlotsByPieceType.put(slot.getPiece().getClass().getName().intern(), new HashMap<String,Slot>());
 		}
 		occupiedSlotsByPieceType.get(slot.getPiece().getClass().getName()).put(strCoordinate,slot);
 		availableSlots.remove(strCoordinate);

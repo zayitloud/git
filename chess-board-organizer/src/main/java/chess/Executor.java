@@ -1,5 +1,6 @@
 package chess;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -70,8 +71,8 @@ public class Executor {
 	public Executor()
 	{
 //		this(new String[]{"6","6","2","1","2","2","1","700000"});		
-		this(new String[]{"3","3","2","0","0","0","1","1000000"});		
-//		this(new String[]{"4","4","0","0","0","4","2","50000"});		
+//		this(new String[]{"3","3","2","0","0","0","1","100"});		
+		this(new String[]{"4","4","0","0","0","4","2","3000"});		
 	}
 	/**
 	 * Constructor of the Executor class which takes as parameter an array of strings which <b>must</b> contain
@@ -99,7 +100,6 @@ public class Executor {
 		boards=new ArrayList<Board>();
 		boardSize= new Coordinate(args[0]+";"+args[1]);
 		pool = new ArrayList<Piece>();
-		es = Executors.newFixedThreadPool(4);
 		try {
 			fillPool(Integer.parseInt(args[2]), King.class.getCanonicalName());
 			fillPool(Integer.parseInt(args[3]), Queen.class.getCanonicalName());
@@ -112,7 +112,9 @@ public class Executor {
 			}else{
 				maxNumberOfRetries=5000;
 			}
-			maxNumberOfParallelCheckers=12;
+			//Parallel execution parameters
+			es = Executors.newFixedThreadPool(4);
+			maxNumberOfParallelCheckers=6;
 		} catch (NumberFormatException | InstantiationException
 				| IllegalAccessException | ClassNotFoundException e) {
 			log.error("Error creating the Executor",e);
@@ -151,6 +153,7 @@ public class Executor {
 	 */
 	public void start()
 	{
+		long startRunningTime=Calendar.getInstance().getTimeInMillis();
 		printExecutionParameters();
 		int successCount=0;
 		Map<String, Slot> occupiedSlots;
@@ -200,11 +203,15 @@ public class Executor {
 		}
 		es.shutdown();
 		printExecutionParameters();
+		DecimalFormat df = (DecimalFormat) DecimalFormat.getInstance();
+		df.applyPattern("#####0.00##");
 		log.info("Success combinations found: " + successCount);
 		log.info("Number of calculations: " + maxNumberOfRetries);
-		log.info("Accumulated time in seconds " + accumulatedTimeInMillis/1000);
-		log.info("Accumulated time in minutes " + accumulatedTimeInMillis/(1000*60));
-		
+		log.info("Accumulated time in seconds " + df.format(accumulatedTimeInMillis/1000d));
+		log.info("Accumulated time in minutes " + df.format(accumulatedTimeInMillis/(1000d*60)));
+		long totalRunningTime=Calendar.getInstance().getTimeInMillis()-startRunningTime;
+		log.info("Total running time in seconds " + df.format(totalRunningTime/1000d));
+		log.info("Total running time in minutes " + df.format(totalRunningTime/(1000d*60)));
 	}
 
 
@@ -270,21 +277,13 @@ public class Executor {
 		{
 			return 2;
 		}
-		if(size<100)
-		{
-			return 3;
-		}
 		if(size<1000)
 		{
 			return 4;
 		}
 		if(size<10000)
 		{
-			return 5;
-//		}
-//		if(size<50000)
-//		{
-//			return 6;
+			return 6;
 		}else{
 			return maxNumberOfParallelCheckers;
 		}

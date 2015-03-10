@@ -3,10 +3,20 @@ package chess;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
 
 import chess.board.Board;
 import chess.board.Slot;
 
+/**
+ * This class started out as a Thread but the implementation has been changed to a Callable class
+ * invoked during the check to find out if the current combination on a board has already being found on
+ * a previous execution. To avoid having a time consuming task checking one by one sequentially (which it certainly is when there are tens of thousand 
+ * combinations already found), now this is done in parallel
+ * with the support of java Executors
+ * @author williez
+ * @see Executors
+ */
 public class CheckerThread implements Callable<Boolean> {
 
 	String pieceType;
@@ -73,9 +83,6 @@ public class CheckerThread implements Callable<Boolean> {
 							previousCombination.get(newPosition).getPiece().getClass().getName()))
 					{
 						
-//						log.debug("Duplicate combination found");
-//						log.debug(currentCombination.toString() + newPosition + "/" + pieceType);
-//						log.debug(previousCombination.toString());
 						return true;
 					}
 				}
