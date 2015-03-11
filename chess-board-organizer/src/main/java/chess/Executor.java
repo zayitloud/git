@@ -12,6 +12,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,14 +79,20 @@ public class Executor {
 	 * For the alternate boards calculation to displace the pieces on their Y axis
 	 */
 	private final short DIRECTION_Y=1;
+	
+	/**
+	 * A flag to allow alternate boards calculation  
+	 */
+	private boolean calculateAlternateBoards=true;
 	/**
 	 * Default constructor
 	 */
 	public Executor()
 	{
-		this(new String[]{"6","6","2","1","2","2","1","700000"});		
+//		this(new String[]{"6","6","2","1","2","2","1","700000"});		
 //		this(new String[]{"3","3","2","0","0","0","1","100"});		
 //		this(new String[]{"4","4","0","0","0","4","2","1000"});		
+		this(new String[]{"4","4","1","2","1","0","0","50000"});		
 	}
 	/**
 	 * Constructor of the Executor class which takes as parameter an array of strings which <b>must</b> contain
@@ -99,12 +107,14 @@ public class Executor {
 	 * <li>Number of Rooks (may be 0)
 	 * <li>Number of retries: the number of times the routine is going to look for possible piece combinations (optional
 	 * 0 or empty if desired). 
+	 * <li>Calculate alternate boards: true/false to indicate whether alternate boards should be calculated for each board combination obtained
+	 * </ol>
 	 * @param args the array of strings containing the parameters defined above
 	 * @throws RuntimeException in case the parameters are incorrect or missing
 	 */
 	public Executor(String args[])
 	{
-		if(args.length<7 || args.length>8)
+		if(args.length<7 || args.length>9)
 		{
 			throw new RuntimeException("Incorrect number of parameters");
 		}
@@ -120,9 +130,27 @@ public class Executor {
 			fillPool(Integer.parseInt(args[6]), Rook.class.getCanonicalName());
 			if(args.length==8)
 			{
-				maxNumberOfRetries=Integer.parseInt(args[7]);
+				if(NumberUtils.isNumber((args[7])))
+				{
+					maxNumberOfRetries=Integer.parseInt(args[7]);
+				}else{
+					maxNumberOfRetries=5000;
+					if(!StringUtils.isBlank(args[7]) && args[7].equalsIgnoreCase("false"))
+					{
+						calculateAlternateBoards=false;
+					}
+				}
 			}else{
-				maxNumberOfRetries=5000;
+				if(NumberUtils.isNumber((args[7])))
+				{
+					maxNumberOfRetries=Integer.parseInt(args[7]);
+				}else{
+					maxNumberOfRetries=5000;
+				}
+				if(!StringUtils.isBlank(args[8]) && args[8].equalsIgnoreCase("false"))
+				{
+					calculateAlternateBoards=false;
+				}
 			}
 			//Parallel execution parameters
 			es = Executors.newFixedThreadPool(4);
@@ -173,6 +201,7 @@ public class Executor {
 		Board board;
 		int occupiedSlotsSize=0;
 		long accumulatedTimeInMillis=0;
+		List<Board> list;
 		for(int retry=1; retry<=maxNumberOfRetries; retry++)
 		{
 
@@ -212,14 +241,17 @@ public class Executor {
 				successCount++;
 				board.print();
 				boards.add(board);
-				List<Board> list = getAlternateBoards(board);
-				for(Board bo: list)
+				if(calculateAlternateBoards)
 				{
-					log.info("-------");
-					bo.print();
-					successCount++;
+					list = getAlternateBoards(board);
+					for(Board bo: list)
+					{
+						log.info("-------");
+						bo.print();
+						successCount++;
+					}
+					boards.addAll(list);
 				}
-				boards.addAll(list);
 			}//else no combination has been found
 		}
 		es.shutdown();
@@ -243,6 +275,7 @@ public class Executor {
 	 * @param pieceType the type of the new piece that will be added to the board
 	 * @param currentCombination the arrangement of pieces in the current board
 	 * @param newPosition the last position being added to the current positions the coordinate where the new piece will be added
+	 * @param boardsList the list of boards whose combinations will be checked to ensure the currentCombination is not duplicated 
 	 * @return true if the arrangement matches any of the previous boards arrangements (the same position and the same piece type), false otherwise
 	 */
 	private boolean matchPreviousCombinationOfCoordinates(String pieceType, Map<String,Slot> currentCombination, String newPosition, List<Board> boardsList)
@@ -253,19 +286,22 @@ public class Executor {
 		}
 		List<CheckerThread> list=new ArrayList<CheckerThread>();
 		List<Future<Boolean>> results=null;
+		//Divide the list of boards by the number of checkers configured
+		//this will produce several list fragments which will be analyzed by the CheckerThreads
+		//This division needs not be exact
 		int boardSize=boardsList.size();
 		int maxNumberOfCheckers=getNumberOfCheckers(boardSize);
-		int section=Math.round(boardSize/maxNumberOfCheckers);
-		int previousPosition=0;
+		int section=boardSize/maxNumberOfCheckers;
+		int previousPosition=0, currentPosition=0;
 		for (int i=0; i<maxNumberOfCheckers;i++)
 		{
-			list.add(new CheckerThread(pieceType, currentCombination, newPosition, boardsList.subList(previousPosition,section)));
-			previousPosition=section;
-			section+=section;
-			if(section>boardSize)
+			currentPosition+=section;
+			if(currentPosition>boardSize)
 			{
-				section=boardSize;
+				currentPosition=boardSize;
 			}
+			list.add(new CheckerThread(pieceType, currentCombination, newPosition, boardsList.subList(previousPosition,currentPosition)));
+			previousPosition=currentPosition;
 		}
 		try {
 			results = es.invokeAll(list);
@@ -350,12 +386,15 @@ public class Executor {
 		log.info("#Bishops: " + args[4]);
 		log.info("#Knights: " + args[5]);
 		log.info("#Rooks: " + args[6]);
+		log.info("Calculate alternate boards: " + calculateAlternateBoards);
 		if(args.length==8)
 		{
-			log.info("Number of retries: " + args[7]);
-		}else{
-			log.info("Number of retries: "+ maxNumberOfRetries+ " (default - not provided)");
-			
+			if(NumberUtils.isNumber(args[7]))
+			{
+				log.info("Number of retries: " + args[7]);
+			}else{
+				log.info("Number of retries: "+ maxNumberOfRetries+ " (default - not provided)");
+			}
 		}
 		
 	}
@@ -434,7 +473,8 @@ public class Executor {
 					{
 						isValidBoard=checkNewPieceOnBoard(piece, coordinate, alternateBoard);
 					}
-
+					//only if it is valid board (no piece threatens another piece) and all pieces have been assigned but one, check if
+					//it matches a previously found combination
 					if(isValidBoard && count==occupiedPositions)
 					{
 						matchesPositions=matchPreviousCombinationOfCoordinates(piece.getClass().getName(), alternateBoard.getOccupiedSlots(), coordinate.toString(),alternateBoards)
