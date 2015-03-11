@@ -91,8 +91,8 @@ public class Executor {
 	{
 //		this(new String[]{"6","6","2","1","2","2","1","700000"});		
 //		this(new String[]{"3","3","2","0","0","0","1","100"});		
-//		this(new String[]{"4","4","0","0","0","4","2","1000"});		
-		this(new String[]{"4","4","1","2","1","0","0","50000"});		
+		this(new String[]{"4","4","0","0","0","4","2","1000"});		
+//		this(new String[]{"4","4","1","2","1","0","0","50000"});		
 	}
 	/**
 	 * Constructor of the Executor class which takes as parameter an array of strings which <b>must</b> contain
@@ -433,6 +433,7 @@ public class Executor {
 		int newCoordinate=0, boardSize=0, count=1;
 		Coordinate coordinate;
 		int occupiedPositions=values.size();
+		Piece piece=null;
 		if(direction==DIRECTION_X)
 		{
 			boardSize=board.getSize().getX();
@@ -460,7 +461,6 @@ public class Executor {
 				{
 					newCoordinate=1;
 				}
-				Piece piece=null;
 				try {
 					piece=slot.getPiece().getClass().newInstance();
 					if(direction==DIRECTION_X)
@@ -509,6 +509,7 @@ public class Executor {
 	 * <li>Number of Rooks (may be 0)
 	 * <li>Number of retries: the number of times the routine is going to look for possible piece combinations (optional
 	 * 0 or empty if desired). 
+	 * <li>Calculate alternate boards: true/false to indicate whether alternate boards should be calculated for each board combination obtained
 	 * @param args the array of parameters
 	 */
 	public static void main(String args[])
