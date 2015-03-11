@@ -241,6 +241,7 @@ public class Executor {
 				successCount++;
 				board.print();
 				boards.add(board);
+				log.info("Success combinations " + successCount);
 				if(calculateAlternateBoards)
 				{
 					list = getAlternateBoards(board);
@@ -249,6 +250,7 @@ public class Executor {
 						log.info("-------");
 						bo.print();
 						successCount++;
+						log.info("Success combinations " + successCount);
 					}
 					boards.addAll(list);
 				}
@@ -258,7 +260,7 @@ public class Executor {
 		printExecutionParameters();
 		DecimalFormat df = (DecimalFormat) DecimalFormat.getInstance();
 		df.applyPattern("#####0.00##");
-		log.info("Success combinations found: " + successCount);
+		log.info("Total Success combinations found: " + successCount);
 		log.info("Number of calculations: " + maxNumberOfRetries);
 		log.info("Accumulated time in seconds " + df.format(accumulatedTimeInMillis/1000d));
 		log.info("Accumulated time in minutes " + df.format(accumulatedTimeInMillis/(1000d*60)));
