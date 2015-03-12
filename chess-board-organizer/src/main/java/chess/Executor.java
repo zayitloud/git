@@ -1,5 +1,10 @@
 package chess;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -33,7 +38,7 @@ import chess.piece.Rook;
  * @author Willie 
  *
  */
-public class Executor {
+public class Executor{
 
 	/**
 	 * The number of times the Executor will look for the combination of pieces on the chess board
@@ -84,6 +89,23 @@ public class Executor {
 	 * A flag to allow alternate boards calculation  
 	 */
 	private boolean calculateAlternateBoards=true;
+	
+	/**
+	 * A flag to indicate if the execution should be serialized
+	 */
+	private boolean saveExecution=false;
+	
+	/**
+	 * flag to indicate if an execution must be continued from a previous execution data
+	 */
+	private boolean continueStoredExecution =false;
+	
+	/**
+	 * default path to save the execution data
+	 */
+	private String executionSavePath;
+	
+	private String previousStoredExecutionPath;
 	/**
 	 * Default constructor
 	 */
@@ -105,16 +127,17 @@ public class Executor {
 	 * <li>Number of Bishop
 	 * <li>Number of Knights
 	 * <li>Number of Rooks (may be 0)
-	 * <li>Number of retries: the number of times the routine is going to look for possible piece combinations (optional
-	 * 0 or empty if desired). 
+	 * <li>Number of retries: the number of times the routine is going to look for possible piece combinations
 	 * <li>Calculate alternate boards: true/false to indicate whether alternate boards should be calculated for each board combination obtained
+	 * <li>The path including the file name containing a previous execution data. <b>note: </b>Provide a quoted empty string when there is not a previous execution data file 
+	 * <li>The path including the filename where this execution's data will be saved (optional parameter)
 	 * </ol>
 	 * @param args the array of strings containing the parameters defined above
 	 * @throws RuntimeException in case the parameters are incorrect or missing
 	 */
 	public Executor(String args[])
 	{
-		if(args.length<7 || args.length>9)
+		if(args.length<7 || args.length>11)
 		{
 			throw new RuntimeException("Incorrect number of parameters");
 		}
@@ -128,33 +151,29 @@ public class Executor {
 			fillPool(Integer.parseInt(args[4]), Bishop.class.getCanonicalName());
 			fillPool(Integer.parseInt(args[5]), Knight.class.getCanonicalName());
 			fillPool(Integer.parseInt(args[6]), Rook.class.getCanonicalName());
-			if(args.length==8)
+			if(NumberUtils.isNumber((args[7])))
 			{
-				if(NumberUtils.isNumber((args[7])))
-				{
-					maxNumberOfRetries=Integer.parseInt(args[7]);
-				}else{
-					maxNumberOfRetries=5000;
-					if(!StringUtils.isBlank(args[7]) && args[7].equalsIgnoreCase("false"))
-					{
-						calculateAlternateBoards=false;
-					}
-				}
+				maxNumberOfRetries=Integer.parseInt(args[7]);
 			}else{
-				if(NumberUtils.isNumber((args[7])))
-				{
-					maxNumberOfRetries=Integer.parseInt(args[7]);
-				}else{
-					maxNumberOfRetries=5000;
-				}
-				if(!StringUtils.isBlank(args[8]) && args[8].equalsIgnoreCase("false"))
-				{
-					calculateAlternateBoards=false;
-				}
+				throw new RuntimeException("Incorrect number of maximum retries");
+			}
+			if(!StringUtils.isBlank(args[8]) && args[8].equalsIgnoreCase("false"))
+			{
+				calculateAlternateBoards=false;
+			}
+			if(args.length>=10 && !StringUtils.isBlank(args[9]))
+			{
+				previousStoredExecutionPath=args[9];
+				continueStoredExecution=true;
+			}
+			if(args.length==11 && !StringUtils.isBlank(args[10]))
+			{
+				executionSavePath=args[10];
+				saveExecution=true;
 			}
 			//Parallel execution parameters
 			es = Executors.newFixedThreadPool(4);
-			maxNumberOfParallelCheckers=6;
+			maxNumberOfParallelCheckers=4;
 		} catch (NumberFormatException | InstantiationException
 				| IllegalAccessException | ClassNotFoundException e) {
 			log.error("Error creating the Executor",e);
@@ -193,9 +212,20 @@ public class Executor {
 	 */
 	public void start()
 	{
+		int successCount=0;
+		if(continueStoredExecution)
+		{
+			Execution previousExecution=readExecution(previousStoredExecutionPath);
+			if(previousExecution!=null)
+			{
+				boards=previousExecution.getBoards();
+				pool=previousExecution.getPool();
+				successCount=boards.size();
+				log.info("Success boards combinations found in file " + successCount);
+			}
+		}
 		long startRunningTime=Calendar.getInstance().getTimeInMillis();
 		printExecutionParameters();
-		int successCount=0;
 		Map<String, Slot> occupiedSlots;
 		List<String> availableSlots;
 		Board board;
@@ -267,6 +297,10 @@ public class Executor {
 		long totalRunningTime=Calendar.getInstance().getTimeInMillis()-startRunningTime;
 		log.info("Total running time in seconds " + df.format(totalRunningTime/1000d));
 		log.info("Total running time in minutes " + df.format(totalRunningTime/(1000d*60)));
+		if(saveExecution)
+		{
+			storeExecution(executionSavePath);
+		}
 	}
 
 
@@ -332,17 +366,17 @@ public class Executor {
 		{
 			return 1;
 		}
-		if(size<50)
+		if(size<5000)
 		{
 			return 2;
 		}
-		if(size<1000)
+		if(size<20000)
 		{
-			return 4;
-		}
-		if(size<10000)
-		{
-			return 6;
+			return 3;
+//		}
+//		if(size<50000)
+//		{
+//			return 6;
 		}else{
 			return maxNumberOfParallelCheckers;
 		}
@@ -389,16 +423,8 @@ public class Executor {
 		log.info("#Knights: " + args[5]);
 		log.info("#Rooks: " + args[6]);
 		log.info("Calculate alternate boards: " + calculateAlternateBoards);
-		if(args.length==8)
-		{
-			if(NumberUtils.isNumber(args[7]))
-			{
-				log.info("Number of retries: " + args[7]);
-			}else{
-				log.info("Number of retries: "+ maxNumberOfRetries+ " (default - not provided)");
-			}
-		}
-		
+		log.info("Previous execution data file: " + (!StringUtils.isBlank(previousStoredExecutionPath)?previousStoredExecutionPath:"Previous execution file not provided"));
+		log.info("Currente execution data file saved in: " + (saveExecution?executionSavePath:"Current execution not saved to a file"));
 	}
 	
 	/**
@@ -496,6 +522,54 @@ public class Executor {
 		}
 	}
 	
+	/**
+	 * Retrieves the information from a previous execution stored on the provided path 
+	 * @param path the path including filename where the execution data is stored 
+	 * @return the execution data
+	 * @See {@link Execution} 
+	 */
+	private Execution readExecution(String path)
+	{
+		try
+		{
+			log.info("Reading execution data from " + path); 
+			FileInputStream fileIn = new FileInputStream(path);
+			ObjectInputStream in = new ObjectInputStream(fileIn);
+			Execution executionData = (Execution) in.readObject();
+			in.close();
+			fileIn.close();
+			log.info("Execution data sucessfully read"); 
+			return executionData;
+		}catch(IOException | ClassNotFoundException c)
+		{
+			log.error("Error reading execution file " + path,c);
+			throw new RuntimeException(c);
+		}
+	}
+	
+	/**
+	 * Stores the execution data (list of boards and pool) on the provided path
+	 * @param path the path including the filename where the execution data will be stored for instance: D:/save/execution.ser
+	 */
+	private void storeExecution(String path)
+	{
+		try
+		{
+			log.info("Saving execution data to " + path); 
+			Execution executionData = new Execution(pool,boards);
+			FileOutputStream fileOut =
+			new FileOutputStream(path);
+			ObjectOutputStream out = new ObjectOutputStream(fileOut);
+			out.writeObject(executionData);
+			out.close();
+			fileOut.close();
+			log.info("Execution data successfully saved");
+		}catch(IOException e)
+		{
+		    log.error("Error storing the execution data on file " + path, e);
+		}
+		
+	}
 	
 	/**
 	 * Main method which is the entry point to execute the routine to calculate the number of position combinations
@@ -509,9 +583,10 @@ public class Executor {
 	 * <li>Number of Bishop
 	 * <li>Number of Knights
 	 * <li>Number of Rooks (may be 0)
-	 * <li>Number of retries: the number of times the routine is going to look for possible piece combinations (optional
-	 * 0 or empty if desired). 
+	 * <li>Number of retries: the number of times the routine is going to look for possible piece combinations
 	 * <li>Calculate alternate boards: true/false to indicate whether alternate boards should be calculated for each board combination obtained
+	 * <li>The path including the file name containing a previous execution data. <b>note: </b>Provide a quoted empty string when there is not a previous execution data file 
+	 * <li>The path including the filename where this execution's data will be saved (optional parameter)
 	 * @param args the array of parameters
 	 */
 	public static void main(String args[])

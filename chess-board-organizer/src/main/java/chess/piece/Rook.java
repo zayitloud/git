@@ -10,6 +10,11 @@ import java.util.List;
  */
 public class Rook extends Piece {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1180417715473658852L;
+
 	@Override
 	public List<Coordinate> calculateCapturePositions(Coordinate position,
 			Coordinate size) {

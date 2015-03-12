@@ -11,6 +11,11 @@ import java.util.List;
 public class King extends Piece {
 
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 773299825828296303L;
+
 	@Override
 	public List<Coordinate> calculateCapturePositions(Coordinate position,
 			Coordinate size) {

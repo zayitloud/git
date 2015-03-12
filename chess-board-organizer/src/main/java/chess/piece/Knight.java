@@ -9,6 +9,11 @@ import java.util.List;
  */
 public class Knight extends Piece {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -4689956977945566840L;
+
 	@Override
 	public List<Coordinate> calculateCapturePositions(Coordinate position,
 			Coordinate size) {

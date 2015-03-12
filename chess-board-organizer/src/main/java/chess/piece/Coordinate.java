@@ -1,5 +1,7 @@
 package chess.piece;
 
+import java.io.Serializable;
+
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -7,8 +9,12 @@ import org.apache.commons.lang.StringUtils;
  * @author 30032751
  *
  */
-public class Coordinate {
+public class Coordinate implements Serializable{
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7980218538079990943L;
 	private int x;
 	private int y;
 

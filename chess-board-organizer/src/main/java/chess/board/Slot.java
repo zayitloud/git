@@ -1,5 +1,7 @@
 package chess.board;
 
+import java.io.Serializable;
+
 import chess.piece.Coordinate;
 import chess.piece.Piece;
 
@@ -13,8 +15,12 @@ import chess.piece.Piece;
  * @author Willie
  *
  */
-public class Slot {
+public class Slot implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 8940048181685356039L;
 	private Coordinate coordinate;
 	private Piece piece;
 	public Coordinate getCoordinate() {

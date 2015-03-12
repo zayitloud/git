@@ -1,5 +1,6 @@
 package chess.board;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,9 +18,14 @@ import chess.piece.Piece;
  * @author Willie   
  *
  */
-public class Board {
+public class Board implements Serializable{
 
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2300876777268760392L;
+
 	/**
 	 * Stores the occupied slots in the board <br>
 	 * The string part of the Map stores the concatenated coordinate x;y
@@ -39,7 +45,7 @@ public class Board {
 		return availableCoordinatesList;
 	}
 
-	private Logger log = LoggerFactory.getLogger(Board.class);
+	private transient Logger log = LoggerFactory.getLogger(Board.class);
 	
 	private Coordinate size;
 	

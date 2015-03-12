@@ -1,5 +1,6 @@
 package chess.piece;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -7,7 +8,11 @@ import java.util.List;
  * @author Willie
  *
  */
-public abstract class Piece {
+public abstract class Piece implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -4526256416055323292L;
 	/**
 	 * The list of capture position for the piece and the 
 	 * current capture position coordinate

@@ -10,6 +10,11 @@ import java.util.List;
  */
 public class Bishop extends Piece {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5880905130422100462L;
+
 	@Override
 	protected List<Coordinate> calculateCapturePositions(Coordinate position,
 			Coordinate size) {
